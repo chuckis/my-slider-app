@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import './SliderComponent.css'; // CSS для стилизации
 
-// Функция для вычисления объема
+
 const calculateVolume = (length: number, width: number, height: number): number => {
   return length * width * height;
+};
+
+
+const recalculateDimension = (volume: number, length: number, width: number, fixed: 'length' | 'width' | 'height'): number => {
+  switch (fixed) {
+    case 'length':
+      return volume / (width * length);
+    case 'width':
+      return volume / (length * width);
+    case 'height':
+      return volume / (length * width);
+    default:
+      return 1;
+  }
 };
 
 const SliderComponent: React.FC = () => {
@@ -12,47 +26,72 @@ const SliderComponent: React.FC = () => {
   const [height, setHeight] = useState<number>(10);
   const [volume, setVolume] = useState<number>(calculateVolume(length, width, height));
 
-  const [isLengthEnabled, setIsLengthEnabled] = useState<boolean>(true);
-  const [isWidthEnabled, setIsWidthEnabled] = useState<boolean>(true);
-  const [isHeightEnabled, setIsHeightEnabled] = useState<boolean>(true);
-  const [isVolumeEnabled, setIsVolumeEnabled] = useState<boolean>(true);
+  const [isLengthFixed, setIsLengthFixed] = useState<boolean>(false);
+  const [isWidthFixed, setIsWidthFixed] = useState<boolean>(false);
+  const [isHeightFixed, setIsHeightFixed] = useState<boolean>(false);
+  const [isVolumeFixed, setIsVolumeFixed] = useState<boolean>(false);
 
-  // Обновление объема при изменении длины, ширины или толщины, если изменение объема включено
+
   useEffect(() => {
-    if (isVolumeEnabled) {
+    if (!isLengthFixed && !isWidthFixed && !isHeightFixed && !isVolumeFixed) {
       setVolume(calculateVolume(length, width, height));
     }
-  }, [length, width, height, isVolumeEnabled]);
+  }, [length, width, height]);
 
-  // Функции изменения ползунков
   const handleLengthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Number(event.target.value);
-    setLength(newValue);
-    if (isVolumeEnabled) {
-      setVolume(calculateVolume(newValue, width, height));
+    const newLength = Number(event.target.value);
+    if (!isLengthFixed) {
+      setLength(newLength);
+
+      if (isVolumeFixed) {
+        setHeight(recalculateDimension(volume, newLength, width, 'length'));
+      } else {
+        setVolume(calculateVolume(newLength, width, height));
+      }
     }
   };
 
   const handleWidthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Number(event.target.value);
-    setWidth(newValue);
-    if (isVolumeEnabled) {
-      setVolume(calculateVolume(length, newValue, height));
+    const newWidth = Number(event.target.value);
+    if (!isWidthFixed) {
+      setWidth(newWidth);
+
+      if (isVolumeFixed) {
+        setHeight(recalculateDimension(volume, length, newWidth, 'width'));
+      } else {
+        setVolume(calculateVolume(length, newWidth, height));
+      }
     }
   };
 
   const handleHeightChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Number(event.target.value);
-    setHeight(newValue);
-    if (isVolumeEnabled) {
-      setVolume(calculateVolume(length, width, newValue));
+    const newHeight = Number(event.target.value);
+    if (!isHeightFixed) {
+      setHeight(newHeight);
+
+      if (isVolumeFixed) {
+        setWidth(recalculateDimension(volume, length, newHeight, 'height'));
+      } else {
+        setVolume(calculateVolume(length, width, newHeight));
+      }
     }
   };
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = Number(event.target.value);
-    if (!isVolumeEnabled) {
-      setVolume(newValue);
+    const newVolume = Number(event.target.value);
+    if (!isVolumeFixed) {
+      setVolume(newVolume);
+
+      if (isLengthFixed) {
+        setHeight(recalculateDimension(newVolume, length, width, 'length'));
+      } else if (isWidthFixed) {
+        setHeight(recalculateDimension(newVolume, length, width, 'width'));
+      } else if (isHeightFixed) {
+        setWidth(recalculateDimension(newVolume, length, height, 'height'));
+      } else {
+      
+        setHeight(newVolume / (length * width));
+      }
     }
   };
 
@@ -66,13 +105,13 @@ const SliderComponent: React.FC = () => {
           max="100"
           value={length}
           onChange={handleLengthChange}
-          disabled={!isLengthEnabled}
+          disabled={isLengthFixed}
         />
         <label className="switch">
           <input
             type="checkbox"
-            checked={isLengthEnabled}
-            onChange={() => setIsLengthEnabled(!isLengthEnabled)}
+            checked={isLengthFixed}
+            onChange={() => setIsLengthFixed(!isLengthFixed)}
           />
           <span className="slider"></span>
         </label>
@@ -86,13 +125,13 @@ const SliderComponent: React.FC = () => {
           max="100"
           value={width}
           onChange={handleWidthChange}
-          disabled={!isWidthEnabled}
+          disabled={isWidthFixed}
         />
         <label className="switch">
           <input
             type="checkbox"
-            checked={isWidthEnabled}
-            onChange={() => setIsWidthEnabled(!isWidthEnabled)}
+            checked={isWidthFixed}
+            onChange={() => setIsWidthFixed(!isWidthFixed)}
           />
           <span className="slider"></span>
         </label>
@@ -106,13 +145,13 @@ const SliderComponent: React.FC = () => {
           max="100"
           value={height}
           onChange={handleHeightChange}
-          disabled={!isHeightEnabled}
+          disabled={isHeightFixed}
         />
         <label className="switch">
           <input
             type="checkbox"
-            checked={isHeightEnabled}
-            onChange={() => setIsHeightEnabled(!isHeightEnabled)}
+            checked={isHeightFixed}
+            onChange={() => setIsHeightFixed(!isHeightFixed)}
           />
           <span className="slider"></span>
         </label>
@@ -123,16 +162,16 @@ const SliderComponent: React.FC = () => {
         <input
           type="range"
           min="1"
-          max="100000" // диапазон изменен для отображения большего объема
+          max="100000"
           value={volume}
           onChange={handleVolumeChange}
-          disabled={isVolumeEnabled}
+          disabled={isVolumeFixed}
         />
         <label className="switch">
           <input
             type="checkbox"
-            checked={isVolumeEnabled}
-            onChange={() => setIsVolumeEnabled(!isVolumeEnabled)}
+            checked={isVolumeFixed}
+            onChange={() => setIsVolumeFixed(!isVolumeFixed)}
           />
           <span className="slider"></span>
         </label>
