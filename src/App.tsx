@@ -4,7 +4,7 @@ import SliderComponent from './SliderComponent';
 const App: React.FC = () => {
   return (
     <div className="App">
-      <h1>Slider Interaction</h1>
+      <h1>Volume Calculator</h1>
       <SliderComponent />
     </div>
   );
